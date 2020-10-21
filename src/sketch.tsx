@@ -62,7 +62,7 @@ export class PongComponent extends React.Component<any, any> {
       this.yBallChange *= -1;
     }
     // points if behind right wall
-    else if (this.xBall + this.diameter > this.windowWidth) {
+    else if (this.xBall + this.diameter / 2 > this.windowWidth) {
       this.xBallChange *= -1;
       this.scoreLeft++;
     }
