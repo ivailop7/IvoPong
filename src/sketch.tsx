@@ -1,7 +1,5 @@
 // Fix a serve ball stuck, maybe some = somewhere
 // Check for a mobile touch side of things, worth doing a mobile support?
-// Do 2 Player Mode
-// Do CPU Mode
 // Make Paddles Dimensions relative to screen with min-values
 // do the you win/you lose screen after 10 points
 // do the menu screen
@@ -39,7 +37,9 @@ export class PongComponent extends React.Component<any, any> {
   leftServe = true;
   rightServe = false;
   
-  cpuMode = true;
+  twoPlayerMode = true;
+  cpuMode = false;
+
   cpuSpeed = 8;
   diff = 0;
 
@@ -229,11 +229,6 @@ export class PongComponent extends React.Component<any, any> {
         this.yPaddleRight -= this.paddleStep;
         if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
         if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
-        if (!this.cpuMode) {
-          this.yPaddleLeft -= this.paddleStep;
-          if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-          if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
-        }
 
         if (this.rightServe) {
           this.xBall = this.xPaddleRight - this.diameter/2;
@@ -244,17 +239,11 @@ export class PongComponent extends React.Component<any, any> {
           this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
         }
     }
-    else if (e.keyCode === 40 || e.keyCode === 39) {
+    if (e.keyCode === 40 || e.keyCode === 39) {
         // down & right arrows
         this.yPaddleRight += this.paddleStep;
         if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
         if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
-
-        if (!this.cpuMode) {
-          this.yPaddleLeft += this.paddleStep;
-          if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-          if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
-        }
 
         if (this.rightServe) {
           this.xBall = this.xPaddleRight - this.diameter/2;
@@ -264,6 +253,23 @@ export class PongComponent extends React.Component<any, any> {
           this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
           this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
         }
+    }
+    // 2nd player keys W (87) and S (83)
+    if (this.twoPlayerMode) {
+      if (e.keyCode === 87) {
+        this.yPaddleLeft -= this.paddleStep;
+        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
+      }
+      if (e.keyCode === 83) {
+        this.yPaddleLeft += this.paddleStep;
+        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
+      }
+      if (this.leftServe) {
+        this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+        this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
+      }
     }
   }
   // has touch events, maybe for mobile to use
