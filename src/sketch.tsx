@@ -9,24 +9,31 @@ export class PongComponent extends React.Component<any, any> {
   // Variables for the paddle
   paddleWidth = 16;
   paddleHeight = 150;
-  borderOffset = 1;
+  borderOffset = 5;
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
   paddleStep = this.windowHeight / 8;
-  xPaddleLeft = 50;
-  yPaddleLeft = 50;
-  xPaddleRight = 50;
-  yPaddleRight = 50;
+  xPaddleLeft = this.borderOffset;
+  yPaddleLeft = this.windowHeight / 2;
+  xPaddleRight = this.windowWidth - this.borderOffset - this.paddleWidth;
+  yPaddleRight = this.windowHeight / 2;
   cpuSpeed = 7;
-  // fix start ball position
-  xBall = Math.floor(Math.random() * 300) + 150;
-  yBall = 50;
+  leftServeXpos = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+  leftServeYpos = this.yPaddleLeft + (0.5 * this.paddleHeight);
+  rightServeXpos = this.xPaddleRight - this.diameter/2;
+  rightServeYpos = this.yPaddleRight + (0.5 * this.paddleHeight);
+  yBall = this.leftServeYpos;
+  xBall = this.leftServeXpos;
+  // yBall = this.rightServeYpos;
+  // xBall = this.rightServeXpos;
   xBallChange = 10;
   yBallChange = 10;
   scoreLeft = 0;
   scoreRight = 0;
   started = false;
   diff = 0;
+  leftServe = true;
+  rightServe = false;
 
   setup = (p5: p5Types, canvasParentRef: Element) => {
     p5.createCanvas(this.windowWidth, this.windowHeight, "p2d").parent(canvasParentRef);
@@ -36,8 +43,10 @@ export class PongComponent extends React.Component<any, any> {
     p5.background(0,0,0);
     
     // Ball bounces off walls
-    this.xBall += this.xBallChange;
-    this.yBall += this.yBallChange;
+    if (this.started) {
+      this.xBall += this.xBallChange;
+      this.yBall += this.yBallChange;
+    }
     
     // Detect collision with paddle left
     if (
@@ -66,6 +75,11 @@ export class PongComponent extends React.Component<any, any> {
     else if (this.xBall < this.diameter / 2) {
       this.xBallChange *= -1;
       this.scoreRight++;
+      this.started = false;
+      // put ball for left serve
+      this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+      this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
+      this.leftServe = true;
     }
 
     // Detect collision with paddle right
@@ -93,9 +107,15 @@ export class PongComponent extends React.Component<any, any> {
       }
     }
     // points if behind right wall
+    // pause game and do serve position for the lost point user
     else if (this.xBall + this.diameter / 2 > this.windowWidth) {
       this.xBallChange *= -1;
       this.scoreLeft++;
+      this.started = false;
+      // put ball for right serve
+      this.xBall = this.xPaddleRight - this.diameter/2;
+      this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
+      this.rightServe = true;
     }
 
     // bounce from top and bottom
@@ -103,18 +123,10 @@ export class PongComponent extends React.Component<any, any> {
         this.yBallChange *= -1;
     }
 
-    // Draw ball
-    p5.fill(255, 255, 255);
-    p5.ellipse(this.xBall, this.yBall, this.diameter, this.diameter);
-
-    // Update paddle location
-    if (!this.started) {
-      this.xPaddleLeft = this.borderOffset;
-      this.yPaddleLeft = this.windowHeight / 2;
-      this.xPaddleRight = this.windowWidth - (this.paddleWidth + this.borderOffset);
-      this.yPaddleRight = this.windowHeight / 2;
-      this.started = true;
-    }
+    // Draw middle line
+    p5.fill(56, 56, 56);
+    p5.noStroke();
+    p5.rect((this.windowWidth - this.paddleWidth) / 2, 0, this.paddleWidth / 2 , this.windowHeight);    
 
     // Draw paddle left
     p5.fill(255, 255, 255);
@@ -125,11 +137,7 @@ export class PongComponent extends React.Component<any, any> {
     p5.fill(255, 255, 255);
     p5.noStroke();
     p5.rect(this.xPaddleRight, this.yPaddleRight, this.paddleWidth, this.paddleHeight);
- 
-    // Draw middle line
-    p5.fill(56, 56, 56);
-    p5.noStroke();
-    p5.rect((this.windowWidth - this.paddleWidth) / 2, 0, this.paddleWidth / 2 , this.windowHeight);    
+
     
     // Draw scores
     p5.textFont("Visitor", 36);
@@ -142,6 +150,11 @@ export class PongComponent extends React.Component<any, any> {
     // game title
     p5.textSize(50);
     p5.text("IvoPong", (this.windowWidth - this.paddleWidth) / 2 - 90 , this.windowHeight - 30);
+
+    // Draw ball (top layer)
+    p5.fill(255, 255, 255);
+    p5.ellipse(this.xBall, this.yBall, this.diameter, this.diameter);
+
     // this.diff = this.yBall - this.yPaddleLeft;
     // this.cpuMove();
   };
@@ -162,6 +175,12 @@ export class PongComponent extends React.Component<any, any> {
   // }
 
   keyPressed = (e: any) => {
+    if (e.keyCode === 32) {
+      // space 
+      this.started = true;
+      this.leftServe = false;
+      this.rightServe = false;
+    }
     if (e.keyCode === 38 || e.keyCode === 37) {
         // up & left arrows
         this.yPaddleRight -= this.paddleStep;
@@ -170,6 +189,15 @@ export class PongComponent extends React.Component<any, any> {
         if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
         if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
         if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
+
+        if (this.rightServe) {
+          this.xBall = this.xPaddleRight - this.diameter/2;
+          this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
+        }
+        else if (this.leftServe) {
+          this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+          this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
+        }
     }
     else if (e.keyCode === 40 || e.keyCode === 39) {
         // down & right arrows
@@ -179,6 +207,15 @@ export class PongComponent extends React.Component<any, any> {
         if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
         if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
         if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
+
+        if (this.rightServe) {
+          this.xBall = this.xPaddleRight - this.diameter/2;
+          this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
+        }
+        else if (this.leftServe) {
+          this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+          this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
+        }
     }
   }
   // has touch events, maybe for mobile to use
