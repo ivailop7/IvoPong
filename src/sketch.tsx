@@ -12,19 +12,21 @@ export class PongComponent extends React.Component<any, any> {
   borderOffset = 1;
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
-
+  paddleStep = this.windowHeight / 8;
   xPaddleLeft = 50;
   yPaddleLeft = 50;
   xPaddleRight = 50;
   yPaddleRight = 50;
+  cpuSpeed = 7;
   // fix start ball position
-  xBall = Math.floor(Math.random() * 300) + 100;
-  yBall = 200;
-  xBallChange = 8;
-  yBallChange = 8;
+  xBall = Math.floor(Math.random() * 300) + 150;
+  yBall = 50;
+  xBallChange = 10;
+  yBallChange = 10;
   scoreLeft = 0;
   scoreRight = 0;
   started = false;
+  diff = 0;
 
   setup = (p5: p5Types, canvasParentRef: Element) => {
     p5.createCanvas(this.windowWidth, this.windowHeight, "p2d").parent(canvasParentRef);
@@ -43,8 +45,22 @@ export class PongComponent extends React.Component<any, any> {
       this.yBall < this.yPaddleLeft + this.paddleHeight &&
       this.yBall >= this.yPaddleLeft
     ) {
-      this.xBallChange *= -1;
-      this.yBallChange *= -1;
+      if (
+        this.yBall > this.yPaddleLeft &&
+        this.yBall < (this.yPaddleLeft + (0.5 * this.paddleHeight))
+      ) {
+        this.yBallChange *= this.yBallChange < 0 ? -1 : 1;
+      }
+      if (
+        this.yBall < this.yPaddleLeft &&
+        this.yBall > (this.yPaddleLeft + (0.5 * this.paddleHeight))
+      ) {
+        this.yBallChange *= this.yBallChange > 0 ? -1 : 1;
+      }
+      else {
+        this.xBallChange *= -1;
+        this.yBallChange *= -1;
+      }
     }
     // points only if behind left wall
     else if (this.xBall < this.diameter / 2) {
@@ -53,13 +69,28 @@ export class PongComponent extends React.Component<any, any> {
     }
 
     // Detect collision with paddle right
+    // if hit with upper half of paddle, redirect up, if lower half, redirect down
     if (
       this.xBall >= this.windowWidth - this.borderOffset - this.paddleWidth - (this.diameter / 2) &&
       this.yBall <= this.yPaddleRight + this.paddleHeight &&
       this.yBall >= this.yPaddleRight
     ) {
-      this.xBallChange *= -1;
-      this.yBallChange *= -1;
+      if (
+        this.yBall > this.yPaddleRight &&
+        this.yBall < (this.yPaddleRight + (0.5 * this.paddleHeight))
+      ) {
+        this.yBallChange *= this.yBallChange < 0 ? -1 : 1;
+      }
+      if (
+        this.yBall < this.yPaddleRight &&
+        this.yBall > (this.yPaddleRight + (0.5 * this.paddleHeight))
+      ) {
+        this.yBallChange *= this.yBallChange > 0 ? -1 : 1;
+      }
+      else {
+        this.xBallChange *= -1;
+        this.yBallChange *= -1;
+      }
     }
     // points if behind right wall
     else if (this.xBall + this.diameter / 2 > this.windowWidth) {
@@ -94,7 +125,7 @@ export class PongComponent extends React.Component<any, any> {
     p5.fill(255, 255, 255);
     p5.noStroke();
     p5.rect(this.xPaddleRight, this.yPaddleRight, this.paddleWidth, this.paddleHeight);
-
+ 
     // Draw middle line
     p5.fill(56, 56, 56);
     p5.noStroke();
@@ -111,29 +142,44 @@ export class PongComponent extends React.Component<any, any> {
     // game title
     p5.textSize(50);
     p5.text("IvoPong", (this.windowWidth - this.paddleWidth) / 2 - 90 , this.windowHeight - 30);
+    // this.diff = this.yBall - this.yPaddleLeft;
+    // this.cpuMove();
   };
+
+  // CPU move right paddle    
+  // cpuMove = () => {
+  //     if (this.diff > this.cpuSpeed * 100)
+  //     {
+  //       this.yPaddleLeft += this.cpuSpeed;
+  //     }
+  //     if (this.diff < this.cpuSpeed * 100)
+  //     {
+  //       this.yPaddleLeft -= this.cpuSpeed;
+  //     }
+  //     if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+  //     if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
+  //     // console.log(this.diff);
+  // }
 
   keyPressed = (e: any) => {
     if (e.keyCode === 38 || e.keyCode === 37) {
         // up & left arrows
-        this.yPaddleLeft -= 50;
-        this.yPaddleRight -= 50;
-        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+        this.yPaddleRight -= this.paddleStep;
+        this.yPaddleLeft -= this.paddleStep;
         if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
         if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
+        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
     }
     else if (e.keyCode === 40 || e.keyCode === 39) {
         // down & right arrows
-        this.yPaddleLeft += 50;
-        this.yPaddleRight += 50;
-        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+        this.yPaddleRight += this.paddleStep;
+        this.yPaddleLeft += this.paddleStep;
         if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
         if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
+        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
     }
-
-    
   }
   // has touch events, maybe for mobile to use
   render() {
