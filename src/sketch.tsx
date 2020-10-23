@@ -1,17 +1,18 @@
 import React from "react";
 import Sketch from "react-p5";
 import p5Types from "p5";
+import MenuComponent from './menu';
+import CongratsComponent from './congrats';
 
 export class PongComponent extends React.Component<any, any> {
-  twoPlayerMode: boolean;
   cpuMode: boolean;
 
   constructor(props: any) {
     super(props);
-    this.twoPlayerMode = props.twoPlayerMode;
     this.cpuMode = props.cpuMode;
     this.state = {
-      finished: false
+      finished: false,
+      goToMenu: false,
     }
   }
   paddleWidth = 16;
@@ -34,7 +35,7 @@ export class PongComponent extends React.Component<any, any> {
   xBall = this.leftServeXpos;
   xBallChange = 12;
   yBallChange = 12;
-  scoreLeft = 0;
+  scoreLeft = 9;
   scoreRight = 0;
   started = false;
   leftServe = true;
@@ -173,7 +174,10 @@ export class PongComponent extends React.Component<any, any> {
     p5.text(this.scoreRight < 10 ? "0" + this.scoreRight : this.scoreRight, this.windowWidth * (3/4), 50);
     // game title
     p5.textSize(50);
-    p5.text("IvoPong", (this.windowWidth - this.paddleWidth) / 2 - 90 , this.windowHeight - 30);
+    p5.text("IvoPong", (this.windowWidth - this.paddleWidth) / 2 - 100 , this.windowHeight - 40);
+    // menu back
+    p5.textSize(20);
+    p5.text("ESC to Menu", (this.windowWidth - this.paddleWidth) / 2 - 62 , this.windowHeight - 20);
 
     // Draw ball (top layer)
     p5.fill(255, 255, 255);
@@ -276,6 +280,11 @@ export class PongComponent extends React.Component<any, any> {
   }
 
   keyPressed = (e: any) => {
+    // esc to menu
+    if (e.keyCode === 27) {
+      console.log("esc");
+      this.setState({goToMenu: true});
+    }
     if (e.keyCode === 32) {
       // space 
       this.started = true;
@@ -319,7 +328,7 @@ export class PongComponent extends React.Component<any, any> {
         }
     }
     // 2nd player keys W (87) and S (83)
-    if (this.twoPlayerMode) {
+    if (!this.cpuMode) {
       if (e.keyCode === 87) {
         this.yPaddleLeft -= this.paddleStep;
         if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
@@ -339,8 +348,9 @@ export class PongComponent extends React.Component<any, any> {
 
   render() {
     return (
-      this.state.finished ? <div>{this.cpuMode ? (this.scoreLeft === 10 ? "CPU Won!" : "You Won!") : (this.scoreLeft === 10 ? "Player 1 Won!" : "Player 2 Won!")}</div> :
+      this.state.goToMenu ? <MenuComponent/> : (
+      this.state.finished ? <div>{this.cpuMode ? (<CongratsComponent winner={this.scoreLeft === 10 ? "CPU" : "You"}/>) : <CongratsComponent winner={(this.scoreLeft === 10 ? "Player 1" : "Player 2")}/>}</div> :
       <Sketch setup={this.setup} draw={this.draw} keyPressed={this.keyPressed} touchStarted={this.cpuMode ? this.touchStartedSinglePlayer : this.touchStartedTwoPlayers} />
-    );
+    ));
   };
 };

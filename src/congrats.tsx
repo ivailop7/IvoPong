@@ -109,7 +109,7 @@ export default class MenuComponent extends React.Component<any, any> {
               color: "lightblue"
             }}
           >
-            IvoPong
+            {`${this.props.winner} Won !`}
           </div>
           <br />
           <br />
