@@ -9,22 +9,6 @@ body {
   color: #ffffff
 }
 
-code {
-  font-family: Visitor, source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-a, span {
-  color: #ffffff;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-a:hover, span:hover {
-  color: yellow;
-  cursor: pointer;
-}
-
 @font-face {
   font-family: 'Visitor';
   font-style: normal;

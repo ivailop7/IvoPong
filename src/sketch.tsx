@@ -3,11 +3,21 @@ import Sketch from "react-p5";
 import p5Types from "p5";
 import MenuComponent from './menu';
 import CongratsComponent from './congrats';
+import * as CONSTANTS from "./constants";
 
-export class PongComponent extends React.Component<any, any> {
+interface PongProps {
+  cpuMode: boolean;
+}
+
+interface PongState {
+  finished: boolean;
+  goToMenu: boolean;
+}
+
+export class PongComponent extends React.Component<PongProps, PongState> {
   cpuMode: boolean;
 
-  constructor(props: any) {
+  constructor(props: PongProps) {
     super(props);
     this.cpuMode = props.cpuMode;
     this.state = {
@@ -15,50 +25,56 @@ export class PongComponent extends React.Component<any, any> {
       goToMenu: false,
     }
   }
-  paddleWidth = 16;
-  paddleHeight = 130;
-  borderOffset = 5;
-  windowWidth = window.innerWidth;
-  windowHeight = window.innerHeight;
+
+  windowWidth: number = window.innerWidth;
+  windowHeight: number = window.innerHeight;
+
+  scoreLeft: number = 0;
+  scoreRight: number = 0;
+  paddleWidth: number = 16;
+  paddleHeight: number = 130;
+  paddleStep: number = this.windowHeight / 9;
+  borderOffset: number = 5;
   diameter: number = 20;
-  paddleStep = this.windowHeight / 9;
-  xPaddleLeft = this.borderOffset;
-  yPaddleLeft = this.windowHeight / 2;
-  xPaddleRight = this.windowWidth - this.borderOffset - this.paddleWidth;
-  yPaddleRight = this.windowHeight / 2;
+
+  xPaddleLeft: number = this.borderOffset;
+  yPaddleLeft: number = this.windowHeight / 2;
+  xPaddleRight: number = this.windowWidth - this.borderOffset - this.paddleWidth;
+  yPaddleRight: number = this.windowHeight / 2;
   
-  leftServeXpos = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
-  leftServeYpos = this.yPaddleLeft + (0.5 * this.paddleHeight);
-  rightServeXpos = this.xPaddleRight - this.diameter/2;
-  rightServeYpos = this.yPaddleRight + (0.5 * this.paddleHeight);
-  yBall = this.leftServeYpos;
-  xBall = this.leftServeXpos;
-  xBallChange = 12;
-  yBallChange = 12;
-  scoreLeft = 9;
-  scoreRight = 0;
-  started = false;
-  leftServe = true;
-  rightServe = false;
+  leftServeXpos: number = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+  leftServeYpos: number = this.yPaddleLeft + (0.5 * this.paddleHeight);
+  rightServeXpos: number = this.xPaddleRight - this.diameter/2;
+  rightServeYpos: number = this.yPaddleRight + (0.5 * this.paddleHeight);
+  
+  yBall: number = this.leftServeYpos;
+  xBall: number = this.leftServeXpos;
+  xBallSpeed: number = 12;
+  yBallSpeed: number = 12;
+   
+  started: boolean = false;
+  leftServe: boolean = true;
+  rightServe: boolean = false;
 
-  cpuSpeed = 8;
-  diff = 0;
+  cpuSpeed: number = 8;
+  diffCpuBall: number = 0;
 
-
+  //p5 Canvas Setup
   setup = (p5: p5Types, canvasParentRef: Element) => {
     p5.createCanvas(this.windowWidth, this.windowHeight, "p2d").parent(canvasParentRef);
   };
 
+  //p5 Canvas Re-draw method
   draw = (p5: p5Types) => {
     p5.background(0,0,0);
     
-    // Ball bounces off walls
+    // global pause - when not started or serve in progress
     if (this.started) {
-      this.xBall += this.xBallChange;
-      this.yBall += this.yBallChange;
+      this.xBall += this.xBallSpeed;
+      this.yBall += this.yBallSpeed;
     }
     
-    // Detect collision with paddle left
+    // Detect collision with left paddle
     // if hit with upper half of paddle, redirect up, if lower half, redirect down
     if (
       this.xBall <= 0 + this.xPaddleLeft + this.paddleWidth + this.borderOffset + (this.diameter / 2)&&
@@ -69,38 +85,33 @@ export class PongComponent extends React.Component<any, any> {
         this.yBall >= this.yPaddleLeft &&
         this.yBall < (this.yPaddleLeft + (0.5 * this.paddleHeight))
       ) {
-        this.yBallChange = Math.abs(this.yBallChange) * -1;
-        this.xBallChange = Math.abs(this.xBallChange) * 1;
-        console.log("left upper", this.yBallChange)
+        this.yBallSpeed = Math.abs(this.yBallSpeed) * -1;
+        this.xBallSpeed = Math.abs(this.xBallSpeed);
       }
       if (
         this.yBall > (this.yPaddleLeft + (0.5 * this.paddleHeight)) &&
         this.yBall <= (this.yPaddleLeft + this.paddleHeight)
       ) {
-        this.yBallChange = Math.abs(this.yBallChange) * 1;
-        this.xBallChange = Math.abs(this.xBallChange) * 1;
-        console.log("left down", this.yBallChange)
+        this.yBallSpeed = Math.abs(this.yBallSpeed);
+        this.xBallSpeed = Math.abs(this.xBallSpeed);
       }
     }
     // points only if behind left wall
     else if (this.xBall < this.diameter / 2) {
-      this.xBallChange *= -1;
+      this.xBallSpeed *= -1;
       this.scoreRight++;
       if (this.scoreRight === 10) {
-        this.setState({finished: true});
+        this.setState({ finished: true });
       }
       this.started = false;
       // put ball for left serve
       this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
       this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
       this.leftServe = true;
-      // reset cpu speed
-      if (this.cpuMode) {
-        this.cpuSpeed = 8;
-      }
+      this.resetCPUSpeed();
     }
 
-    // Detect collision with paddle right
+    // Detect collision with right paddle
     // if hit with upper half of paddle, redirect up, if lower half, redirect down
     if (
       this.xBall >= this.windowWidth - this.borderOffset - this.paddleWidth - (this.diameter / 2) &&
@@ -111,47 +122,34 @@ export class PongComponent extends React.Component<any, any> {
         this.yBall >= this.yPaddleRight &&
         this.yBall < (this.yPaddleRight + (0.5 * this.paddleHeight))
       ) {
-        this.yBallChange = Math.abs(this.yBallChange) * -1;
-        this.xBallChange = Math.abs(this.xBallChange) * -1;
-        console.log("right upper", this.yBallChange)
+        this.yBallSpeed = Math.abs(this.yBallSpeed) * -1;
+        this.xBallSpeed = Math.abs(this.xBallSpeed) * -1;
       }
       if (
         this.yBall > (this.yPaddleRight + (0.5 * this.paddleHeight)) &&
         this.yBall <= (this.yPaddleRight + this.paddleHeight)
       ) {
-        this.yBallChange = Math.abs(this.yBallChange) * 1;
-        this.xBallChange = Math.abs(this.xBallChange) * -1;
-        console.log("right down", this.yBallChange)
+        this.yBallSpeed = Math.abs(this.yBallSpeed);
+        this.xBallSpeed = Math.abs(this.xBallSpeed) * -1;
       }
     }
     // points if behind right wall
     // pause game and do serve position for the lost point user
     else if (this.xBall + this.diameter / 2 > this.windowWidth) {
-      this.xBallChange *= -1;
+      this.xBallSpeed *= -1;
       this.scoreLeft++;
       if (this.scoreLeft === 10) {
-        this.setState({finished: true});
+        this.setState({ finished: true });
       }
       this.started = false;
       // put ball for right serve
       this.xBall = this.xPaddleRight - this.diameter/2;
       this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
       this.rightServe = true;
-      // reset cpu speed
-      if (this.cpuMode) {
-        this.cpuSpeed = 8;
-      }
+      this.resetCPUSpeed();
     }
-
-    // bounce from top and bottom
-    if (this.yBall < this.diameter / 2 || this.yBall > this.windowHeight - this.diameter) {
-        this.yBallChange *= -1;
-    }
-
-    // Draw middle line
-    p5.fill(56, 56, 56);
-    p5.noStroke();
-    p5.rect((this.windowWidth - this.paddleWidth) / 2, 0, this.paddleWidth / 2 , this.windowHeight);    
+    
+    this.bounceTopBottom();
 
     // Draw paddle left
     p5.fill(255, 255, 255);
@@ -163,28 +161,18 @@ export class PongComponent extends React.Component<any, any> {
     p5.noStroke();
     p5.rect(this.xPaddleRight, this.yPaddleRight, this.paddleWidth, this.paddleHeight);
 
+    this.drawStaticItems(p5);
     
-    // Draw scores
-    p5.textFont("Visitor", 36);
-    p5.fill(255, 255, 255);
-    p5.textSize(70);
-    // left
-    p5.text(this.scoreLeft < 10 ? "0" + this.scoreLeft : this.scoreLeft, this.windowWidth * (1/4), 50);
-    // right
-    p5.text(this.scoreRight < 10 ? "0" + this.scoreRight : this.scoreRight, this.windowWidth * (3/4), 50);
-    // game title
-    p5.textSize(50);
-    p5.text("IvoPong", (this.windowWidth - this.paddleWidth) / 2 - 100 , this.windowHeight - 40);
-    // menu back
-    p5.textSize(20);
-    p5.text("ESC to Menu", (this.windowWidth - this.paddleWidth) / 2 - 62 , this.windowHeight - 20);
-
     // Draw ball (top layer)
     p5.fill(255, 255, 255);
     p5.ellipse(this.xBall, this.yBall, this.diameter, this.diameter);
+    
+    this.cpuShouldAction();
+  };
 
+  cpuShouldAction = () => {
     if (this.cpuMode) {
-      this.diff = this.yBall - this.yPaddleLeft;
+      this.diffCpuBall = this.yBall - this.yPaddleLeft;
       if (this.leftServe) {
         setTimeout(() => this.cpuServe(), 1000);
       }
@@ -192,27 +180,30 @@ export class PongComponent extends React.Component<any, any> {
         this.cpuMove();
       }
     }
-  };
+  }
 
   cpuServe = () => {
       this.started = true;
       this.leftServe = false;
   }
+
   // CPU move right paddle    
   cpuMove = () => {
-      if (this.diff > this.cpuSpeed * 0.7)
-      {
-        this.yPaddleLeft += this.cpuSpeed;
+      this.yPaddleLeft += this.diffCpuBall >= this.cpuSpeed * 0.7 ? this.cpuSpeed : (this.cpuSpeed * -1);
+      
+      // bound to play window
+      if (this.yPaddleLeft <= 0) {
+        this.yPaddleLeft = 0;
       }
-      if (this.diff < this.cpuSpeed * 0.7)
-      {
-        this.yPaddleLeft -= this.cpuSpeed;
+      if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) {
+        this.yPaddleLeft = this.windowHeight - this.paddleHeight;
       }
-      if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-      if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
-      const add: boolean = Math.random() <= 0.5;
+
+      // Randomize CPU speed
       const speedDiff = Math.floor(Math.random() * 4);
-      this.cpuSpeed = add ? this.cpuSpeed + speedDiff : this.cpuSpeed - speedDiff;
+      this.cpuSpeed += Math.random() <= 0.5 ? speedDiff : (speedDiff * -1);
+
+      // bound the CPU speed change
       if (this.cpuSpeed > 16) {
         this.cpuSpeed = 16;
       }
@@ -221,129 +212,145 @@ export class PongComponent extends React.Component<any, any> {
       }
   }
 
+  resetCPUSpeed = () => {
+    if (this.cpuMode) {
+      this.cpuSpeed = 8;
+    }
+  }
+  bounceTopBottom = () => {
+    // bounce from top and bottom
+    if (this.yBall < this.diameter / 2 || this.yBall > this.windowHeight - this.diameter) {
+        this.yBallSpeed *= -1;
+    }
+  }
+  moveBallDuringRightServe = (moveBallDuringRightServe: boolean) => {
+    if (moveBallDuringRightServe) {
+      this.xBall = this.xPaddleRight - this.diameter/2;
+      this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
+    }
+  }
+
+  moveBallDuringLeftServe = (moveBallDuringLeftServe: boolean) => {
+    if (moveBallDuringLeftServe) {
+      this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
+      this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
+    }
+  }
+
+  mobileServeRight = (rightServe: boolean) => {
+    if (rightServe) {
+      this.xBallSpeed *= this.xBallSpeed > 0 ? -1 : 1;
+      this.rightServe = false;
+      this.started = true;
+    }
+  }
+
+  mobileServeLeft = (leftServe: boolean) => {
+    if (leftServe) {
+      this.xBallSpeed *= this.xBallSpeed > 0 ? 1 : -1;
+      this.leftServe = false;
+      this.started = true;
+    }
+  }
+
+  boundToWindow = () => {
+    if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
+    if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
+    if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
+    if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
+  }
+
+  drawStaticItems = (p5: p5Types) => {
+    // Draw middle line
+    p5.fill(56, 56, 56);
+    p5.noStroke();
+    p5.rect((this.windowWidth - this.paddleWidth) / 2, 0, this.paddleWidth / 2 , this.windowHeight);    
+
+    // Draw scores
+    p5.textFont("Visitor", 36);
+    p5.fill(255, 255, 255);
+    p5.textSize(70);
+    p5.text(this.scoreLeft < 10 ? "0" + this.scoreLeft : this.scoreLeft, this.windowWidth * (1/4), 50);
+    p5.text(this.scoreRight < 10 ? "0" + this.scoreRight : this.scoreRight, this.windowWidth * (3/4), 50);
+
+    // title & menu back text
+    p5.textSize(50);
+    p5.text("IvoPong", (this.windowWidth - this.paddleWidth) / 2 - 100 , this.windowHeight - 40);
+    p5.textSize(20);
+    p5.text("ESC to Menu", (this.windowWidth - this.paddleWidth) / 2 - 62 , this.windowHeight - 20);
+  }
+
+  //p5 event on mobile screen tap / desktop click
   touchStartedSinglePlayer = (t: any) => {
-    console.log(t);
     if (t.pmouseY < 0.5 * t.height) {
       this.yPaddleRight -= this.paddleStep;
-      if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-      if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
     }
     else {
       this.yPaddleRight += this.paddleStep;
-      if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-      if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
     }
-    if (this.rightServe) {
-      this.xBallChange *= this.xBallChange > 0 ? -1 : 1;
-      this.rightServe = false;
-      this.started = true;
-    }
+    this.boundToWindow();
+    this.mobileServeRight(this.rightServe);
   }
 
+  //p5 event on mobile screen tap / desktop click
   touchStartedTwoPlayers = (t: any) => {
     //right
     if (t.pmouseY < 0.5 * t.height && t.pmouseX > 0.5 * t.width) {
-      console.log("top right")
       this.yPaddleRight -= this.paddleStep;
-      if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-      if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
     }
     if (t.pmouseY > 0.5 * t.height && t.pmouseX > 0.5 * t.width) {
-      console.log("bottom right")
       this.yPaddleRight += this.paddleStep;
-      if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-      if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
     }
     //left
     if (t.pmouseY < 0.5 * t.height && t.pmouseX < 0.5 * t.width) {
-      console.log("top left")
       this.yPaddleLeft -= this.paddleStep;
-      if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-      if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
     }
     if (t.pmouseY > 0.5 * t.height && t.pmouseX < 0.5 * t.width) {
-      console.log("bottom left")
       this.yPaddleLeft += this.paddleStep;
-      if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-      if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
     }
-    if (this.rightServe) {
-      this.xBallChange *= this.xBallChange > 0 ? -1 : 1;
-      this.rightServe = false;
-      this.started = true;
-    }
-    if (this.leftServe) {
-      this.xBallChange *= this.xBallChange > 0 ? 1 : -1;
-      this.leftServe = false;
-      this.started = true;
-    }
+    this.boundToWindow();
+    this.mobileServeRight(this.rightServe);
+    this.mobileServeLeft(this.leftServe);
   }
 
+  //p5 event on key press
   keyPressed = (e: any) => {
     // esc to menu
-    if (e.keyCode === 27) {
-      console.log("esc");
-      this.setState({goToMenu: true});
+    if (e.keyCode === CONSTANTS.ESC) {
+      this.setState({ goToMenu: true });
     }
-    if (e.keyCode === 32) {
+    if (e.keyCode === CONSTANTS.SPACEBAR) {
       // space 
       this.started = true;
       if (this.leftServe) {
-        this.xBallChange *= this.xBallChange > 0 ? 1 : -1;
+        this.xBallSpeed = Math.abs(this.xBallSpeed);
       }
       if (this.rightServe) {
-        this.xBallChange *= this.xBallChange > 0 ? -1 : 1;
+        this.xBallSpeed = Math.abs(this.xBallSpeed) * -1;
       }
       this.leftServe = false;
       this.rightServe = false;
     }
-    if (e.keyCode === 38 || e.keyCode === 37) {
-        // up & left arrows
+    if (e.keyCode === CONSTANTS.UP_ARROW || e.keyCode === CONSTANTS.LEFT_ARROW) {
         this.yPaddleRight -= this.paddleStep;
-        if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-        if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
-
-        if (this.rightServe) {
-          this.xBall = this.xPaddleRight - this.diameter/2;
-          this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
-        }
-        else if (this.leftServe) {
-          this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
-          this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
-        }
     }
-    if (e.keyCode === 40 || e.keyCode === 39) {
-        // down & right arrows
+    if (e.keyCode === CONSTANTS.DOWN_ARROW || e.keyCode === CONSTANTS.RIGHT_ARROW) {
         this.yPaddleRight += this.paddleStep;
-        if (this.yPaddleRight <= 0) this.yPaddleRight = 0;
-        if (this.yPaddleRight + this.paddleHeight >= this.windowHeight ) this.yPaddleRight = this.windowHeight - this.paddleHeight;
-
-        if (this.rightServe) {
-          this.xBall = this.xPaddleRight - this.diameter/2;
-          this.yBall = this.yPaddleRight + (0.5 * this.paddleHeight);
-        }
-        else if (this.leftServe) {
-          this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
-          this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
-        }
     }
+
     // 2nd player keys W (87) and S (83)
     if (!this.cpuMode) {
-      if (e.keyCode === 87) {
+      if (e.keyCode === CONSTANTS.W_KEY) {
         this.yPaddleLeft -= this.paddleStep;
-        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
       }
-      if (e.keyCode === 83) {
+      if (e.keyCode === CONSTANTS.S_KEY) {
         this.yPaddleLeft += this.paddleStep;
-        if (this.yPaddleLeft <= 0) this.yPaddleLeft = 0;
-        if (this.yPaddleLeft + this.paddleHeight >= this.windowHeight ) this.yPaddleLeft = this.windowHeight - this.paddleHeight;
-      }
-      if (this.leftServe) {
-        this.xBall = this.xPaddleLeft + this.paddleWidth + this.diameter/2;
-        this.yBall = this.yPaddleLeft + (0.5 * this.paddleHeight);
       }
     }
+
+    this.moveBallDuringLeftServe(this.leftServe);
+    this.moveBallDuringRightServe(this.rightServe);
+    this.boundToWindow();
   }
 
   render() {
@@ -354,3 +361,5 @@ export class PongComponent extends React.Component<any, any> {
     ));
   };
 };
+
+export default PongComponent;

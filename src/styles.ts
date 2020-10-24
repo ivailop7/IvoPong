@@ -1,4 +1,18 @@
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
+
+// Global Styles
+export const GlobalStyling = createGlobalStyle`
+a, span {
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a:hover, span:hover {
+  color: yellow;
+  cursor: pointer;
+}
+`;
 
 // Menu & Congrats Screens
 export const centeredVHDiv = styled.div`
@@ -13,6 +27,7 @@ export const centeredVHDiv = styled.div`
 export const titleText = styled.div`
     font-size: 72px;
     color: lightblue;
+    margin-bottom: 40px;
 `;
 
 export const itemText = styled.div`
@@ -21,8 +36,8 @@ export const itemText = styled.div`
 
 // Rules Popup
 export const rulesWindow = styled.div`
-  width: 40%;
-  height: 40%;
+  width: 80%;
+  height: 75%;
   top: 50%;
   left: 50%;
   font-size: 26px;
@@ -70,7 +85,7 @@ export const styledImg = styled.img`
 
 export const styledShareButtons = styled.div`
   margin: 0 auto;
-  font-size: 24px;
+  font-size: 20px;
   height: 77px;
   bottom: 0px;
   width: 100%;

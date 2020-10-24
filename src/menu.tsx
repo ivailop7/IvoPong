@@ -1,62 +1,35 @@
 import React from "react";
-import { PongComponent } from "./sketch";
+import PongComponent from "./sketch";
+import MenuItems from "./menu-items";
+import RulesWindow from "./rules-window";
 import FooterComponent from "./footer";
 import * as Styles from "./styles";
+import { TWO_PLAYER_RULES, CPU_RULES } from "./constants";
 
-export default class MenuComponent extends React.Component<any, any> {
-  constructor(props: any) {
-    super(props);
-
-    this.state = {
-      cpuMode: false,
-      twoPlayerMode: false,
-      rulesRead: false,
-    };
-  }
-
-  cpuRules = "'Spacebar' to serve, 'Arrow keys' to move the paddle. With mouse, click upper half/lower half of the window. On mobile, tap the upper/lower half of screen to move in that direction. The first player to win 10 points wins.";
-  twoPlayerRules = "'Spacebar' to serve, 'Arrow keys' to move the right paddle. Keys 'W' and 'S' to move the left paddle. One of the players can play with the mouse clicking on the screen upper/lower quadrants on their side of the window. On mobile, the player 1, can tap the top and bottom of left half of the screen to move, the player 2, the top and bottom of the right half to move. The first player to win 10 points wins.";
-  
-  render() {
-    return this.state.cpuMode ? (
+const MenuComponent: React.FC<{}> = () => {
+  const [cpuMode, setCPUMode] = React.useState(false);
+  const [twoPlayerMode, setTwoPlayerMode] = React.useState(false);
+  const [readRules, setReadRules] = React.useState(false);
+ 
+    return cpuMode ? (
       <>
-        {!this.state.readRules ? <Styles.rulesWindow><span>{this.cpuRules}</span><Styles.styledButton onClick={() => this.setState({readRules: true})}>Got It</Styles.styledButton></Styles.rulesWindow> : <PongComponent cpuMode={true} />}
+        {!readRules ? 
+          <RulesWindow contents={CPU_RULES} readRules={() => setReadRules(true)}/> : <PongComponent cpuMode={true} />}
       </>
-    ) : this.state.twoPlayerMode ? (
+    ) : twoPlayerMode ? (
       <>
-        {!this.state.readRules ? <Styles.rulesWindow><span>{this.twoPlayerRules}</span><Styles.styledButton onClick={() => this.setState({readRules: true})}>Got It</Styles.styledButton></Styles.rulesWindow> : <PongComponent cpuMode={false} />}
+        {!readRules ? 
+          <RulesWindow contents={TWO_PLAYER_RULES} readRules={() => setReadRules(true)}/> : <PongComponent cpuMode={false} />}
       </>
     ) : (
       <>
         <Styles.centeredVHDiv>
           <Styles.titleText>IvoPong</Styles.titleText>
-          <br />
-          <br />
-          <br />
-          <br />
-          <Styles.itemText>
-            <div>
-              <span onClick={() => this.setState({ cpuMode: true })}>
-                Player vs CPU
-              </span>
-            </div>
-            <div>
-              <span onClick={() => this.setState({ twoPlayerMode: true })}>
-                Player vs Player
-              </span>
-            </div>
-            <br />
-            <br />
-            <div>
-              <a href="https://github.com/ivailop7/IvoPong">View in GitHub</a>
-            </div>
-            <div>
-              <a href="https://www.ivaylopavlov.com">Go To Blog</a>
-            </div>
-          </Styles.itemText>
+          <MenuItems startCPUMode={() => setCPUMode(true)} startTwoPlayerMode={() => setTwoPlayerMode(true)}/>
         </Styles.centeredVHDiv>
         <FooterComponent/>
       </>
     );
-  }
 }
+
+export default MenuComponent;

@@ -1,11 +1,13 @@
 import React from 'react';
 import MenuComponent from './menu';
+import * as Styles from "./styles";
 
 function App() {
   return (
-    <div className="App">
+    <>
+      <Styles.GlobalStyling/>
       <MenuComponent/>
-    </div>
+    </>
   );
 }
 
